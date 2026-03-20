@@ -7,62 +7,95 @@
 <title>QMS Alertas</title>
 
 <style>
+
+/* ===== BASE ===== */
 body{
 font-family:'Segoe UI',sans-serif;
 margin:0;
 background:#eef1f5;
+font-size:16px;
 }
 
+/* ===== HEADER ===== */
 header{
 background:#1e293b;
 color:white;
-padding:12px;
+padding:16px;
 font-weight:bold;
 display:flex;
 justify-content:space-between;
 align-items:center;
+font-size:18px;
 }
 
+header button{
+background:#22c55e;
+padding:12px 16px;
+border:none;
+border-radius:10px;
+color:white;
+font-size:16px;
+}
+
+/* ===== TOOLBAR ===== */
 .toolbar{
 display:flex;
-gap:8px;
-padding:10px;
+gap:10px;
+padding:12px;
 background:white;
 box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 .toolbar input{
 flex:1;
-padding:8px;
-border-radius:8px;
+padding:12px;
+border-radius:10px;
 border:1px solid #ccc;
+font-size:16px;
 }
 
 .toolbar button{
-padding:8px;
+padding:12px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 background:#1e293b;
 color:white;
+font-size:16px;
 }
 
-.container{padding:10px;}
+/* ===== CONTENIDO ===== */
+.container{padding:12px;}
 
+/* ===== TARJETAS ===== */
 .card{
 background:white;
-padding:12px;
-margin-bottom:10px;
-border-radius:10px;
-box-shadow:0 2px 6px rgba(0,0,0,0.1);
+padding:16px;
+margin-bottom:12px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+font-size:16px;
 }
 
-.activa{border-left:5px solid #22c55e;}
-.proxima{border-left:5px solid #f59e0b;}
-.vencida{border-left:5px solid #ef4444;}
+.card button{
+width:100%;
+margin-top:10px;
+background:#2563eb;
+color:white;
+padding:14px;
+border:none;
+border-radius:10px;
+font-size:16px;
+}
+
+.activa{border-left:6px solid #22c55e;}
+.proxima{border-left:6px solid #f59e0b;}
+.vencida{border-left:6px solid #ef4444;}
 
 .badge{
-font-size:12px;
-padding:4px 8px;
+display:inline-block;
+margin-top:6px;
+font-size:13px;
+padding:6px 10px;
 border-radius:8px;
 color:white;
 }
@@ -71,25 +104,62 @@ color:white;
 .badge.proxima{background:#f59e0b;}
 .badge.vencida{background:#ef4444;}
 
+/* ===== MODAL PRO ===== */
 .modal{
 display:none;
 position:fixed;
-top:0;
+bottom:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.4);
 }
 
 .modal-content{
+position:absolute;
+bottom:0;
+width:100%;
 background:white;
-margin:20px auto;
-padding:15px;
-width:90%;
-max-width:400px;
+padding:20px;
+border-radius:20px 20px 0 0;
+max-height:90%;
+overflow:auto;
+}
+
+.modal-content h3{
+margin-top:0;
+font-size:20px;
+}
+
+.modal-content input{
+padding:14px;
+font-size:16px;
+margin-bottom:10px;
+border-radius:10px;
+border:1px solid #ccc;
+width:100%;
+}
+
+.modal-content button{
+width:100%;
+padding:14px;
+font-size:16px;
+margin-top:8px;
+border:none;
 border-radius:10px;
 }
 
+.modal-content button:first-of-type{
+background:#16a34a;
+color:white;
+}
+
+.modal-content button:last-of-type{
+background:#dc2626;
+color:white;
+}
+
+/* ===== VISOR ===== */
 .viewer{
 width:100%;
 height:100vh;
@@ -97,46 +167,52 @@ background:#e5e7eb;
 display:flex;
 justify-content:center;
 align-items:center;
+padding:10px;
 }
 
 .viewer-content{
 background:white;
 padding:10px;
-border-radius:10px;
-width:90%;
-max-width:700px;
-aspect-ratio:8.5/11;
+border-radius:12px;
+max-width:95%;
+max-height:95%;
 display:flex;
 justify-content:center;
 align-items:center;
 position:relative;
 }
 
+/* 🔥 IMAGEN HD */
 .viewer img{
 max-width:100%;
-max-height:100%;
+max-height:90vh;
+object-fit:contain;
+image-rendering:auto;
 }
 
+/* WATERMARK */
 .watermark{
 position:absolute;
-font-size:50px;
+font-size:60px;
 color:red;
-opacity:0.2;
+opacity:0.15;
 transform:rotate(-20deg);
 }
 
+/* BOTÓN SALIR */
 .btn-salir{
 position:fixed;
 top:10px;
 left:10px;
 background:#1e293b;
 color:white;
-padding:8px;
+padding:12px;
 border:none;
-border-radius:6px;
+border-radius:8px;
+font-size:16px;
 }
-</style>
 
+</style>
 </head>
 
 <body>
@@ -155,6 +231,7 @@ border-radius:6px;
 <div id="lista"></div>
 </div>
 
+<!-- VISOR -->
 <div id="pantallaViewer" style="display:none;">
 <button class="btn-salir" onclick="volver()">⬅</button>
 
@@ -166,23 +243,24 @@ border-radius:6px;
 </div>
 </div>
 
+<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
 
-<h3>Nueva alerta</h3>
+<h3>Registrar alerta</h3>
 
 <input id="noAlerta" placeholder="No alerta">
 <input id="parte" placeholder="No parte">
 <input type="date" id="fechaExp">
-<input type="file" id="img">
+<input type="file" id="img" accept="image/*">
 
-<button onclick="guardar()">Guardar</button>
+<button onclick="guardar()">Guardar alerta</button>
 <button onclick="cerrarModal()">Cancelar</button>
 
 </div>
 </div>
 
-<!-- 🔥 FIREBASE + APP -->
+<!-- FIREBASE -->
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
@@ -280,8 +358,8 @@ lista.innerHTML+=`
 <b>${a.no}</b><br>
 Parte: ${a.parte}<br>
 Vence: ${a.exp}<br>
-<span class="badge ${e}">${e}</span><br><br>
-<button onclick="ver('${a.id}')">Ver</button>
+<span class="badge ${e}">${e}</span>
+<button onclick="ver('${a.id}')">Ver alerta</button>
 </div>
 `;
 });
