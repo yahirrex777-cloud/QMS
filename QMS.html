@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>QMS Alertas</title>
+
+<style>
+body{
+font-family:'Segoe UI',sans-serif;
+margin:0;
+background:#eef1f5;
+}
+
+header{
+background:#1e293b;
+color:white;
+padding:12px;
+font-weight:bold;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.toolbar{
+display:flex;
+gap:8px;
+padding:10px;
+background:white;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.toolbar input{
+flex:1;
+padding:8px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+.toolbar button{
+padding:8px;
+border:none;
+border-radius:8px;
+background:#1e293b;
+color:white;
+}
+
+.container{padding:10px;}
+
+.card{
+background:white;
+padding:12px;
+margin-bottom:10px;
+border-radius:10px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.activa{border-left:5px solid #22c55e;}
+.proxima{border-left:5px solid #f59e0b;}
+.vencida{border-left:5px solid #ef4444;}
+
+.badge{
+font-size:12px;
+padding:4px 8px;
+border-radius:8px;
+color:white;
+}
+
+.badge.activa{background:#22c55e;}
+.badge.proxima{background:#f59e0b;}
+.badge.vencida{background:#ef4444;}
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+}
+
+.modal-content{
+background:white;
+margin:20px auto;
+padding:15px;
+width:90%;
+max-width:400px;
+border-radius:10px;
+}
+
+.viewer{
+width:100%;
+height:100vh;
+background:#e5e7eb;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.viewer-content{
+background:white;
+padding:10px;
+border-radius:10px;
+width:90%;
+max-width:700px;
+aspect-ratio:8.5/11;
+display:flex;
+justify-content:center;
+align-items:center;
+position:relative;
+}
+
+.viewer img{
+max-width:100%;
+max-height:100%;
+}
+
+.watermark{
+position:absolute;
+font-size:50px;
+color:red;
+opacity:0.2;
+transform:rotate(-20deg);
+}
+
+.btn-salir{
+position:fixed;
+top:10px;
+left:10px;
+background:#1e293b;
+color:white;
+padding:8px;
+border:none;
+border-radius:6px;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+<div>📊 QMS Alertas</div>
+<button onclick="abrirModal()">+ Nueva</button>
+</header>
+
+<div class="toolbar">
+<input type="text" id="busqueda" placeholder="🔍 Buscar alerta...">
+<button onclick="ordenar()">Ordenar</button>
+</div>
+
+<div class="container" id="pantallaLista">
+<div id="lista"></div>
+</div>
+
+<div id="pantallaViewer" style="display:none;">
+<button class="btn-salir" onclick="volver()">⬅</button>
+
+<div class="viewer">
+<div class="viewer-content">
+<img id="imagenVista">
+<div id="marca" class="watermark"></div>
+</div>
+</div>
+</div>
+
+<div class="modal" id="modal">
+<div class="modal-content">
+
+<h3>Nueva alerta</h3>
+
+<input id="noAlerta" placeholder="No alerta">
+<input id="parte" placeholder="No parte">
+<input type="date" id="fechaExp">
+<input type="file" id="img">
+
+<button onclick="guardar()">Guardar</button>
+<button onclick="cerrarModal()">Cancelar</button>
+
+</div>
+</div>
+
+<!-- 🔥 FIREBASE + APP -->
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCF8LqahGUkhN7ddsi8bNmYiruaiiT2cFM",
+  authDomain: "qa-qms.firebaseapp.com",
+  projectId: "qa-qms",
+  storageBucket: "qa-qms.firebasestorage.app",
+  messagingSenderId: "526116480194",
+  appId: "1:526116480194:web:d97830dbe49c496834875b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let alertas = [];
+let asc=true;
+
+function estado(fecha){
+let hoy=new Date();
+let exp=new Date(fecha);
+let diff=(exp-hoy)/(1000*60*60*24);
+if(diff<0) return "vencida";
+if(diff<=3) return "proxima";
+return "activa";
+}
+
+window.abrirModal = ()=> modal.style.display="block";
+window.cerrarModal = ()=> modal.style.display="none";
+
+function toBase64(file){
+return new Promise(res=>{
+let r=new FileReader();
+r.onload=()=>res(r.result);
+r.readAsDataURL(file);
+});
+}
+
+window.guardar = async function(){
+
+let base64="";
+
+if(img.files[0]){
+base64 = await toBase64(img.files[0]);
+}
+
+await addDoc(collection(db,"alertas"),{
+no:noAlerta.value,
+parte:parte.value,
+exp:fechaExp.value,
+img:base64
+});
+
+cerrarModal();
+cargarAlertas();
+}
+
+async function cargarAlertas(){
+
+alertas=[];
+
+let snapshot = await getDocs(collection(db,"alertas"));
+
+snapshot.forEach(doc=>{
+let a = doc.data();
+a.id = doc.id;
+alertas.push(a);
+});
+
+render();
+}
+
+window.ordenar = function(){
+asc=!asc;
+alertas.sort((a,b)=> asc ? new Date(a.exp)-new Date(b.exp) : new Date(b.exp)-new Date(a.exp));
+render();
+}
+
+function render(){
+
+let texto=busqueda.value.toLowerCase();
+
+lista.innerHTML="";
+
+alertas
+.filter(a=>a.no.toLowerCase().includes(texto)||a.parte.toLowerCase().includes(texto))
+.forEach(a=>{
+
+let e=estado(a.exp);
+
+lista.innerHTML+=`
+<div class="card ${e}">
+<b>${a.no}</b><br>
+Parte: ${a.parte}<br>
+Vence: ${a.exp}<br>
+<span class="badge ${e}">${e}</span><br><br>
+<button onclick="ver('${a.id}')">Ver</button>
+</div>
+`;
+});
+}
+
+window.ver = function(id){
+
+let a = alertas.find(x=>x.id===id);
+
+pantallaLista.style.display="none";
+pantallaViewer.style.display="block";
+
+imagenVista.src=a.img;
+marca.innerText = estado(a.exp)==="vencida" ? "VENCIDA" : "";
+}
+
+window.volver = function(){
+pantallaLista.style.display="block";
+pantallaViewer.style.display="none";
+}
+
+busqueda.addEventListener("input",render);
+
+cargarAlertas();
+
+</script>
+
+</body>
+</html>
